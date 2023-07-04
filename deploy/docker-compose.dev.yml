@@ -1,0 +1,19 @@
+version: '3.9'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ./deploy/Dockerfile
+    ports:
+      # Exposes application port.
+    - "8000:8000"
+    volumes:
+      # Adds current directory as volume.
+    - .:/app/src/
+    environment:
+      # Enables autoreload.
+      LANGCHAIN_DOCUMENT_LOADER_RELOAD: "True"
+      LANGCHAIN_DOCUMENT_LOADER_AWS_ACCESS_ID: ${LANGCHAIN_DOCUMENT_LOADER_AWS_ACCESS_ID}
+      LANGCHAIN_DOCUMENT_LOADER_AWS_ACCESS_KEY: ${LANGCHAIN_DOCUMENT_LOADER_AWS_ACCESS_KEY}
+      LANGCHAIN_DOCUMENT_LOADER_S3_BUCKET: ${LANGCHAIN_DOCUMENT_LOADER_S3_BUCKET}

@@ -1,0 +1,52 @@
+name: Build and push Docker Image and Deploy to EC2
+
+on:
+  push:
+    branches:
+    - develop
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Build and push Docker Image to AWS ECR
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-south-1
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+    - name: Set Environment Variables from Secrets
+      run: |
+        echo "VAR1=${{ secrets.VAR1 }}" >> .env
+        echo "VAR2=${{ secrets.VAR2 }}" >> .env
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-and-push
+      run: |
+        docker-compose -f deploy/docker-compose.yml --project-directory . build
+        docker tag langchain_document_loader:latest 753230306691.dkr.ecr.ap-south-1.amazonaws.com/langchain_document_loader:latest
+        docker push 753230306691.dkr.ecr.ap-south-1.amazonaws.com/langchain_document_loader:latest
+    - name: Docker login
+      run: aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 753230306691.dkr.ecr.ap-south-1.amazonaws.com
+    - name: Deploy Docker Container to EC2
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.KEY }}
+        envs: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, DOCKER_IMAGE
+        script: |
+          AWS_LOGIN=$(aws ecr get-login-password --region $AWS_REGION)
+          echo "$AWS_LOGIN" | docker login --username AWS --password-stdin 753230306691.dkr.ecr.ap-south-1.amazonaws.com
+          docker pull $DOCKER_IMAGE
+          docker stop $(docker ps -aq) || true
+          docker run -d -p 8080:8000 $DOCKER_IMAGE
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ap-south-1
+        DOCKER_IMAGE: 753230306691.dkr.ecr.ap-south-1.amazonaws.com/langchain_document_loader:latest
+
