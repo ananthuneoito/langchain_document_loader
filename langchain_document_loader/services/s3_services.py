@@ -18,6 +18,8 @@ class S3Uploader:
         :param secret_key: AWS secret key
         :param bucket_name: name of the S3 bucket
         """
+        print("access_key", access_key)
+        print("secret_key", secret_key)
         self.s3 = boto3.client(
             "s3",
             aws_access_key_id=access_key,
@@ -46,7 +48,7 @@ class S3Uploader:
 
         except FileNotFoundError:
             raise HTTPException(
-                status_code=settings.http_not_found, detail="The file was not found",
+                status_code=settings.http_not_found, detail="The file was not found.",
             )
 
         except NoCredentialsError:
