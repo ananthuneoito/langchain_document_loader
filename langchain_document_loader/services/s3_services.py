@@ -46,10 +46,12 @@ class S3Uploader:
 
         except FileNotFoundError:
             raise HTTPException(
-                status_code=settings.http_not_found, detail="The file was not found",
+                status_code=settings.http_not_found,
+                detail="The file was not found",
             )
 
         except NoCredentialsError:
             raise HTTPException(
-                status_code=settings.http_not_found, detail="Credentials not available",
+                status_code=settings.http_not_found,
+                detail="Credentials not available",
             )

@@ -1,9 +1,9 @@
-from botocore.exceptions import NoCredentialsError
-from fastapi import APIRouter, File, HTTPException, UploadFile
-from langchain.document_loaders import S3FileLoader
+from fastapi import APIRouter, File, UploadFile
 
-from langchain_document_loader.services.s3_services import S3Uploader
-from langchain_document_loader.settings import settings
+from langchain_document_loader.services.document_service import (
+    process_pdf_file,
+    upload_s3_file,
+)
 from langchain_document_loader.web.api.documents.document_schema import ResponseSchema
 
 router = APIRouter()
@@ -15,23 +15,9 @@ async def upload_pdf_to_s3(file: UploadFile = File(...)) -> ResponseSchema:
 
     :param  file: a file to be uploaded to s3
     :returns: a StandardResponse instance that contains either the file url or error
-    :raises HTTPException: If failed to upload the document to s3
     """
-    try:
-        uploader = S3Uploader(
-            settings.AWS_ACCESS_ID,
-            settings.AWS_ACCESS_KEY,
-            settings.S3_BUCKET,
-        )
-
-        response = uploader.upload(file.file, file.filename)
-        return ResponseSchema(
-            data={"file_url": response},
-            message="Upload successful",
-            error=False,
-        )
-    except NoCredentialsError as error:
-        raise HTTPException(status_code=settings.http_not_found, detail=str(error))
+    # call the pdf upload service
+    return upload_s3_file(file)
 
 
 @router.post("/process-pdf/", response_model=ResponseSchema)
@@ -40,21 +26,6 @@ def process_pdf(s3_url: str) -> ResponseSchema:
 
     :param  s3_url: url of the pdf file in an s3 bucket
     :returns: a CommonResponse instance that contains either the document text or error
-    :raises HTTPException: If failed to process the document
     """
-    try:
-        url = s3_url.replace("https://", "")
-        segments = url.split("/")
-        bucket_name = segments[0].replace(".s3.amazonaws.com", "")
-        file_name = segments[-1]
-        loader = S3FileLoader(bucket_name, file_name)
-        docs = loader.load()
-
-
-        return ResponseSchema(
-            message="Successfully fetched the document contents.",
-            error=False,
-            data={"docs": docs},
-        )
-    except NoCredentialsError as error:
-        raise HTTPException(status_code=settings.http_not_found, detail=str(error))
+    # call the process pdf service
+    return process_pdf_file(s3_url)
