@@ -48,7 +48,9 @@ def process_pdf(s3_url: str) -> ResponseSchema:
         bucket_name = segments[0].replace(".s3.amazonaws.com", "")
         file_name = segments[-1]
         loader = S3FileLoader(bucket_name, file_name)
+        print(bucket_name, file_name)
         docs = loader.load()
+
 
         return ResponseSchema(
             message="Successfully fetched the document contents.",
