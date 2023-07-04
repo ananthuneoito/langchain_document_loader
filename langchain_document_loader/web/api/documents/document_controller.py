@@ -42,20 +42,19 @@ def process_pdf(s3_url: str) -> ResponseSchema:
     :returns: a CommonResponse instance that contains either the document text or error
     :raises HTTPException: If failed to process the document
     """
-    # try:
-    url = s3_url.replace("https://", "")
-    segments = url.split("/")
-    bucket_name = segments[0].replace(".s3.amazonaws.com", "")
-    file_name = segments[-1]
-    loader = S3FileLoader(bucket_name, file_name)
-    print(bucket_name, file_name)
-    docs = loader.load()
+    try:
+        url = s3_url.replace("https://", "")
+        segments = url.split("/")
+        bucket_name = segments[0].replace(".s3.amazonaws.com", "")
+        file_name = segments[-1]
+        loader = S3FileLoader(bucket_name, file_name)
+        docs = loader.load()
 
 
-    return ResponseSchema(
-        message="Successfully fetched the document contents.",
-        error=False,
-        data={"docs": docs},
-    )
-    # except NoCredentialsError as error:
-    #     raise HTTPException(status_code=settings.http_not_found, detail=str(error))
+        return ResponseSchema(
+            message="Successfully fetched the document contents.",
+            error=False,
+            data={"docs": docs},
+        )
+    except NoCredentialsError as error:
+        raise HTTPException(status_code=settings.http_not_found, detail=str(error))
